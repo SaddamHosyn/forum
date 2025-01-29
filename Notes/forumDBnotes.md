@@ -18,3 +18,30 @@ Importance of Database Schemas
 They guide users in performing operations such as querying, inserting, updating, and deleting data.
 They help maintain consistency and integrity across the database by enforcing rules and relationships between different entities.
 Database schemas are essential for efficient database design and management, enabling better performance and easier maintenance.
+
+
+
+package main
+
+import (
+    "encoding/json"
+    "net/http"
+)
+
+type Post struct {
+    ID      int    `json:"id"`
+    Title   string `json:"title"`
+    Content string `json:"content"`
+}
+
+var posts []Post
+
+func getPosts(w http.ResponseWriter, r *http.Request) {
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(posts)
+}
+
+func main() {
+    http.HandleFunc("/posts", getPosts)
+    http.ListenAndServe(":8080", nil)
+}
