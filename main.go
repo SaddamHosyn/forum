@@ -12,7 +12,7 @@ func main() {
 	log.Println("Server is starting...\n")
 	log.Println("Go on http://localhost:8000/\n")
 	log.Println("To shut down the server press CTRL + C\n")
-	err := http.ListenAndServe(":8080", nil)
+	err := http.ListenAndServe(":8000", nil)
 	if err != nil {
 		log.Fatalf("Server failed to start: %v", err)
 	}
