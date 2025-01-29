@@ -16,7 +16,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler(w, r, http.StatusNotFound)
 		return
 	}
-	tmpl, err := template.ParseFiles("./website/index.html")
+	tmpl, err := template.ParseFiles("./html/index.html")
 	if err != nil {
 		ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -32,7 +32,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		ErrorHandler(w, r, http.StatusNotFound)
 		return
 	}
-	tmpl, err := template.ParseFiles("./website/post.html")
+	tmpl, err := template.ParseFiles("./html/post.html")
 	if err != nil {
 		ErrorHandler(w, r, http.StatusInternalServerError)
 		return
@@ -42,7 +42,6 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 		log.Printf("Error 500: Rendering Error on about.html")
 	}
 }
-
 
 func ErrorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	w.WriteHeader(status)
