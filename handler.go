@@ -46,7 +46,7 @@ func postHandler(w http.ResponseWriter, r *http.Request) {
 func ErrorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	w.WriteHeader(status)
 	if status == http.StatusNotFound {
-		t, err := template.ParseFiles("./static/templates/error.html")
+		t, err := template.ParseFiles("./html/error.html")
 		if err != nil {
 			ErrorHandler(w, r, http.StatusInternalServerError)
 			return
@@ -65,7 +65,7 @@ func ErrorHandler(w http.ResponseWriter, r *http.Request, status int) {
 		t.Execute(w, p)
 	}
 	if status == http.StatusBadRequest {
-		t, err := template.ParseFiles("./static/templates/error.html")
+		t, err := template.ParseFiles("./html/error.html")
 		if err != nil {
 			log.Printf("HTTP status 500: Internal Server Error -missing error.html file%v", err)
 		}
