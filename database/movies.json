@@ -1,0 +1,14 @@
+[
+   {
+       "title": "Inception",
+       "description": "A mind-bending thriller",
+       "release_date": "2010-07-16",
+       "image_url": "inception.jpg"
+   },
+   {
+       "title": "The Matrix",
+       "description": "A sci-fi classic",
+       "release_date": "1999-03-31",
+       "image_url": "matrix.jpg"
+    }
+]

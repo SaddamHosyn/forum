@@ -1,0 +1,29 @@
+[
+   {
+     "username": "Joon",
+     "email": "joon@example.com",
+     "password_hash": "P@$$wOrd1"
+   },
+   {
+     "username": "gigi",
+     "email": "gigi@example.com",
+     "password_hash": "MyS3cretPass!"
+   },
+   {
+     "username": "mayre",
+     "email": "mayre@example.com",
+     "password_hash": "FlyT0TheMoon"
+   },
+   {
+     "username": "sagyngoogle",
+     "email": "sagyngoogle@example.com",
+     "password_hash": "SecondStar"
+   },
+   {
+      "username": "Saddam",
+      "email": "hussain@example.com",
+      "password_hash": "BackSlash"
+    }
+
+ ]
+ 

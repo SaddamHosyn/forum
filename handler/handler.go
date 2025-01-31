@@ -1,4 +1,4 @@
-package main
+package handler
 
 import (
 	"log"
@@ -11,7 +11,23 @@ type Text struct {
 	ErrorMes string
 }
 
-func indexHandler(w http.ResponseWriter, r *http.Request) {
+func LoginHandler(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path != "/login" {
+		ErrorHandler(w, r, http.StatusNotFound)
+		return
+	}
+	tmpl, err := template.ParseFiles("./html/login.html")
+	if err != nil {
+		ErrorHandler(w, r, http.StatusInternalServerError)
+		return
+	}
+	err = tmpl.Execute(w, nil)
+	if err != nil {
+		log.Printf("Error 500: Rendering Error on about.html")
+	}
+}
+
+func IndexHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/" {
 		ErrorHandler(w, r, http.StatusNotFound)
 		return
@@ -27,7 +43,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func postHandler(w http.ResponseWriter, r *http.Request) {
+func PostHandler(w http.ResponseWriter, r *http.Request) {
 	if r.URL.Path != "/post" {
 		ErrorHandler(w, r, http.StatusNotFound)
 		return

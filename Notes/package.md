@@ -1,9 +1,10 @@
 ## Useable Package
 - **Unique User ID"**
-    - "github.com/satori/go.uuid
+    - "github.com/satori/go.uuid"
 
 - **SQLite3 Package**
     - "github.com/mattn/go-sqlite3"
+        - A driver for SQLite
 
 - **bcrypt package**
     - Provos and Mazières's bcrypt adaptive hashing algorithm. 
