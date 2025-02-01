@@ -10,41 +10,11 @@ import (
 	"path/filepath"
 
 	"forum-go/database"
+	. "forum-go/models"
+
 
 	_ "github.com/mattn/go-sqlite3"
 )
-
-// User struct matches JSON structure
-type User struct {
-	Username     string `json:"username"`
-	Email        string `json:"email"`
-	PasswordHash string `json:"password_hash"`
-}
-
-// Movie struct for JSON data
-type Movie struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	ReleaseDate string `json:"release_date"`
-	ImageURL    string `json:"image_url"`
-}
-
-type Genre struct {
-	Name string `json:"name"`
-}
-
-// Comment struct for JSON data
-type Comment struct {
-	UserID  int    `json:"user_id"`
-	MovieID int    `json:"movie_id"`
-	Content string `json:"content"`
-}
-
-// MovieGenre struct for JSON data, this is not directly insertable.
-type MovieGenre struct {
-    MovieID  int    `json:"movie_id"`
-    GenreID int  `json:"genre_id"`
-}
 
 
 func main() {
@@ -94,12 +64,12 @@ func main() {
 		log.Fatalf("Error loading genres: %v", err)
 	}
 	for _, genre := range genres {
-        var existingGenre string
-        err = db.QueryRow("SELECT name FROM genres WHERE name = ?", genre.Name).Scan(&existingGenre)
-        if err == nil {
-            log.Printf("Genre with name %s already exist. skipping genre\n", genre.Name)
-            continue
-        }
+		var existingGenre string
+		err = db.QueryRow("SELECT name FROM genres WHERE name = ?", genre.Name).Scan(&existingGenre)
+		if err == nil {
+			log.Printf("Genre with name %s already exist. skipping genre\n", genre.Name)
+			continue
+		}
 		_, err = db.Exec("INSERT INTO genres (name) VALUES (?)", genre.Name)
 		if err != nil {
 			log.Printf("Failed to insert genre %s: %v", genre.Name, err)
@@ -114,12 +84,12 @@ func main() {
 		log.Fatalf("Error loading movies: %v", err)
 	}
 	for _, movie := range movies {
-        var existingMovieTitle string
-        err = db.QueryRow("SELECT title FROM movies WHERE title = ?", movie.Title).Scan(&existingMovieTitle)
-        if err == nil {
-            log.Printf("Movie with title %s already exist. skipping movie\n", movie.Title)
-            continue
-        }
+		var existingMovieTitle string
+		err = db.QueryRow("SELECT title FROM movies WHERE title = ?", movie.Title).Scan(&existingMovieTitle)
+		if err == nil {
+			log.Printf("Movie with title %s already exist. skipping movie\n", movie.Title)
+			continue
+		}
 		_, err = db.Exec("INSERT INTO movies (title, description, release_date, image_url) VALUES (?, ?, ?, ?)", movie.Title, movie.Description, movie.ReleaseDate, movie.ImageURL)
 		if err != nil {
 			log.Printf("Failed to insert movie %s: %v", movie.Title, err)
@@ -127,7 +97,6 @@ func main() {
 			log.Printf("Inserted movie: %s", movie.Title)
 		}
 	}
-
 
 	// Load and insert comments
 	comments, err := loadCommentsFromJSON(filepath.Join("database", "comments.json"))
@@ -157,12 +126,12 @@ func main() {
 		log.Fatalf("Error loading movie_genre data: %v", err)
 	}
 	for _, mg := range movieGenres {
-        var existingMovieGenreID int
-        err = db.QueryRow("SELECT movie_id FROM movie_genre WHERE movie_id = ? AND genre_id = ?", mg.MovieID, mg.GenreID).Scan(&existingMovieGenreID)
-        if err == nil {
-            log.Printf("movie_genre with movie_id %d and genre_id %d already exist. skipping movie_genre \n", mg.MovieID, mg.GenreID)
-            continue
-        }
+		var existingMovieGenreID int
+		err = db.QueryRow("SELECT movie_id FROM movie_genre WHERE movie_id = ? AND genre_id = ?", mg.MovieID, mg.GenreID).Scan(&existingMovieGenreID)
+		if err == nil {
+			log.Printf("movie_genre with movie_id %d and genre_id %d already exist. skipping movie_genre \n", mg.MovieID, mg.GenreID)
+			continue
+		}
 		_, err = db.Exec("INSERT INTO movie_genre (movie_id, genre_id) VALUES (?, ?)", mg.MovieID, mg.GenreID)
 		if err != nil {
 			log.Printf("Failed to insert movie_genre entry: %v", err)
@@ -171,10 +140,31 @@ func main() {
 		}
 	}
 
+	// Fetch and log movies with genres
+        moviesWithGenres, err := database.GetMoviesWithGenres(db)
+        if err != nil {
+            log.Println("Error getting movies with genres:", err)
+        }
+        fmt.Println("\nMovies with Genres:")
+        for _, mwg := range moviesWithGenres {
+            fmt.Printf("  - Movie: %s, Genres: %v\n", mwg.Movie.Title, mwg.Genres)
+        }
+
+        // Fetch and log genres with movies
+        genresWithMovies, err := database.GetGenresWithMovies(db)
+        if err != nil {
+            log.Println("Error getting genres with movies:", err)
+        }
+        fmt.Println("\nGenres with Movies:")
+        for _, gwm := range genresWithMovies {
+            fmt.Printf("  - Genre: %s, Movies: %v\n", gwm.Genre.Name, gwm.Movies)
+        }
+
 	fmt.Println("User data inserted successfully.")
 	fmt.Print("Start Server...")
 	StartServer()
 }
+
 
 // Function to start a simple HTTP server
 func StartServer() {
@@ -219,18 +209,17 @@ func loadMoviesFromJSON(filename string) ([]Movie, error) {
 
 // Function to load genres from JSON file
 func loadGenresFromJSON(filename string) ([]Genre, error) {
-    var genres []Genre
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return nil, err
-    }
-    err = json.Unmarshal(data, &genres)
-    if err != nil {
-        return nil, err
-    }
-    return genres, nil
+	var genres []Genre
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &genres)
+	if err != nil {
+		return nil, err
+	}
+	return genres, nil
 }
-
 
 // Function to load comments from JSON file
 func loadCommentsFromJSON(filename string) ([]Comment, error) {
@@ -248,14 +237,14 @@ func loadCommentsFromJSON(filename string) ([]Comment, error) {
 
 // Function to load movie_genre data from JSON file
 func loadMovieGenreFromJSON(filename string) ([]MovieGenre, error) {
-    var movieGenres []MovieGenre
-    data, err := ioutil.ReadFile(filename)
-    if err != nil {
-        return nil, err
-    }
-    err = json.Unmarshal(data, &movieGenres)
-    if err != nil {
-        return nil, err
-    }
-    return movieGenres, nil
+	var movieGenres []MovieGenre
+	data, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+	err = json.Unmarshal(data, &movieGenres)
+	if err != nil {
+		return nil, err
+	}
+	return movieGenres, nil
 }

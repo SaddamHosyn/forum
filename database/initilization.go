@@ -4,6 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"forum-go/models"
+
 )
 
 // InitDB initializes the database and populates tables if empty
@@ -166,4 +168,100 @@ func PopulateData(db *sql.DB) error {
 
 	fmt.Println("Database populated successfully!")
 	return nil
+}
+
+// Function to fetch and return movies with their associated genres
+func GetMoviesWithGenres(db *sql.DB) ([]models.MovieWithGenres, error) {
+	rows, err := db.Query(`
+        SELECT m.movie_id, m.title, m.description, m.release_date, m.image_url, g.name
+        FROM movies m
+        LEFT JOIN movie_genre mg ON m.movie_id = mg.movie_id
+        LEFT JOIN genres g ON mg.genre_id = g.genre_id
+    `)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	movieMap := make(map[int]models.MovieWithGenres)
+
+	for rows.Next() {
+		var movieID int
+		var movieTitle, movieDescription, movieReleaseDate, movieImageURL string
+		var genreName string
+		err := rows.Scan(&movieID, &movieTitle, &movieDescription, &movieReleaseDate, &movieImageURL, &genreName)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := movieMap[movieID]; !ok {
+			movieMap[movieID] = models.MovieWithGenres{
+				Movie: models.Movie{
+					Title:       movieTitle,
+					Description: movieDescription,
+					ReleaseDate: movieReleaseDate,
+					ImageURL:    movieImageURL,
+				},
+				Genres: []string{},
+			}
+		}
+		if genreName != "" {
+			currentMovie := movieMap[movieID]
+			currentMovie.Genres = append(currentMovie.Genres, genreName)
+			movieMap[movieID] = currentMovie
+		}
+
+	}
+	var moviesWithGenres []models.MovieWithGenres
+	for _, movieWithGenre := range movieMap {
+		moviesWithGenres = append(moviesWithGenres, movieWithGenre)
+	}
+
+	return moviesWithGenres, nil
+}
+
+// Function to fetch and return genres with their associated movies
+func GetGenresWithMovies(db *sql.DB) ([]models.GenreWithMovies, error) {
+	rows, err := db.Query(`
+    SELECT g.genre_id, g.name, m.title
+        FROM genres g
+        LEFT JOIN movie_genre mg ON g.genre_id = mg.genre_id
+        LEFT JOIN movies m ON mg.movie_id = m.movie_id
+    `)
+
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	genreMap := make(map[int]models.GenreWithMovies)
+
+	for rows.Next() {
+		var genreID int
+		var genreName string
+		var movieTitle sql.NullString
+		err := rows.Scan(&genreID, &genreName, &movieTitle)
+		if err != nil {
+			return nil, err
+		}
+		if _, ok := genreMap[genreID]; !ok {
+			genreMap[genreID] = models.GenreWithMovies{
+				Genre: models.Genre{
+					Name: genreName,
+				},
+				Movies: []string{},
+			}
+		}
+		if movieTitle.Valid {
+			currentGenre := genreMap[genreID]
+			currentGenre.Movies = append(currentGenre.Movies, movieTitle.String)
+			genreMap[genreID] = currentGenre
+		}
+	}
+
+	var genresWithMovies []models.GenreWithMovies
+	for _, genreWithMovie := range genreMap {
+		genresWithMovies = append(genresWithMovies, genreWithMovie)
+	}
+
+	return genresWithMovies, nil
 }
