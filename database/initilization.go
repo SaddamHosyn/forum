@@ -4,264 +4,208 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"forum-go/models"
+	"strings"
 
+	. "forum-go/models"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-// InitDB initializes the database and populates tables if empty
-func InitDB(db *sql.DB) {
-	// Create all tables
-	CreateAllTables(db)
-
-	// Populate tables if empty
-	err := PopulateData(db)
-	if err != nil {
-		log.Println("Error populating database:", err)
-	}
-}
-
-// CreateAllTables ensures all necessary tables are created
-func CreateAllTables(database *sql.DB) {
-	CreateUsersTable(database)
-	CreateMoviesTable(database)
-	CreateGenresTable(database)
-	CreateCommentsTable(database)
-	CreateMovieGenreTable(database)
-}
-
-// CreateUsersTable defines the schema for users
-func CreateUsersTable(database *sql.DB) {
-	createUsersTableQuery := `
-	CREATE TABLE IF NOT EXISTS users (
-		id INTEGER PRIMARY KEY,
-		username TEXT UNIQUE NOT NULL, 
-		email TEXT UNIQUE NOT NULL, 
-		password_hash TEXT UNIQUE NOT NULL, -- Hashed password_hash
-		created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-	);`
-
-	if _, err := database.Exec(createUsersTableQuery); err != nil {
-		fmt.Println("Error creating users table:", err)
-		return
-	}
-	fmt.Println("Users table created successfully or already exists.")
-}
-
-// CreateMoviesTable defines the schema for movies
-func CreateMoviesTable(database *sql.DB) {
-	query := `
-	CREATE TABLE IF NOT EXISTS movies (
-		id INTEGER PRIMARY KEY,
-		title TEXT NOT NULL, 
-		description TEXT,
-		release_date TEXT,
-		image_url TEXT
-	);`
-	_, err := database.Exec(query)
-	if err != nil {
-		fmt.Println("Error creating movies table:", err)
-	}
-}
-
-// CreateGenresTable defines the schema for genres
-func CreateGenresTable(database *sql.DB) {
-	query := `
-	CREATE TABLE IF NOT EXISTS genres (
-		id INTEGER PRIMARY KEY,
-		name TEXT UNIQUE NOT NULL
-	);`
-	_, err := database.Exec(query)
-	if err != nil {
-		fmt.Println("Error creating genres table:", err)
-	}
-}
-
-// CreateCommentsTable defines the schema for comments
-func CreateCommentsTable(database *sql.DB) {
-	query := `
-	CREATE TABLE IF NOT EXISTS comments (
-		id INTEGER PRIMARY KEY,
-		user_id INTEGER,
-		movie_id INTEGER,
-		content TEXT,
-		FOREIGN KEY (user_id) REFERENCES users(id),
-		FOREIGN KEY (movie_id) REFERENCES movies(id)
-	);`
-	_, err := database.Exec(query)
-	if err != nil {
-		fmt.Println("Error creating comments table:", err)
-	}
-}
-
-// CreateMovieGenreTable defines the linking table for movies and genres
-func CreateMovieGenreTable(database *sql.DB) {
-	query := `
-	CREATE TABLE IF NOT EXISTS movie_genre (
-		movie_id INTEGER,
-		genre_id INTEGER,
-		FOREIGN KEY (movie_id) REFERENCES movies(id),
-		FOREIGN KEY (genre_id) REFERENCES genres(id),
-		PRIMARY KEY (movie_id, genre_id)
-	);`
-	_, err := database.Exec(query)
-	if err != nil {
-		fmt.Println("Error creating movie_genre table:", err)
-	}
-}
-
-// PopulateData inserts initial data only if tables are empty
-func PopulateData(db *sql.DB) error {
-	var count int
-
-	// Check if the users table has data
-	row := db.QueryRow("SELECT COUNT(*) FROM users;")
-	err := row.Scan(&count)
-	if err != nil {
-		return err
-	}
-	if count > 0 {
-		fmt.Println("Database already populated.")
-		return nil
-	}
-
-	// Insert Users
-	_, err = db.Exec(`INSERT INTO users (username, email, password_hash) VALUES 
-		('Joon', 'joon@example.com', 'P@$$wOrd1'),
-		('gigi', 'gigi@example.com', 'MyS3cretPass!'),
-		('mayre', 'mayre@example.com', 'FlyT0TheMoon'),
-		('sagyngoogle', 'sagyngoogle@example.com', 'SecondStar');`)
-	if err != nil {
-		return err
-	}
-
-	// Insert Movies
-	_, err = db.Exec(`INSERT INTO movies (title, description, release_date, image_url) VALUES 
-		('Inception', 'A mind-bending thriller', '2010-07-16', 'inception.jpg'),
-		('The Matrix', 'A sci-fi classic', '1999-03-31', 'matrix.jpg');`)
-	if err != nil {
-		return err
-	}
-
-	// Insert Genres
-	_, err = db.Exec(`INSERT INTO genres (name) VALUES ('Action'), ('Sci-Fi'), ('Drama');`)
-	if err != nil {
-		return err
-	}
-
-	// Insert Comments
-	_, err = db.Exec(`INSERT INTO comments (user_id, movie_id, content) VALUES 
-		(1, 1, 'Amazing movie!'),
-		(2, 2, 'A masterpiece!');`)
-	if err != nil {
-		return err
-	}
-
-	// Insert into movie_genre (linking movies and genres)
-	_, err = db.Exec(`INSERT INTO movie_genre (movie_id, genre_id) VALUES 
-		(1, 2), -- Inception (Sci-Fi)
-		(2, 2), -- The Matrix (Sci-Fi)
-		(2, 1); -- The Matrix (Action)
-	`)
-	if err != nil {
-		return err
-	}
-
-	fmt.Println("Database populated successfully!")
-	return nil
-}
-
-// Function to fetch and return movies with their associated genres
-func GetMoviesWithGenres(db *sql.DB) ([]models.MovieWithGenres, error) {
-	rows, err := db.Query(`
-        SELECT m.movie_id, m.title, m.description, m.release_date, m.image_url, g.name
-        FROM movies m
-        LEFT JOIN movie_genre mg ON m.movie_id = mg.movie_id
-        LEFT JOIN genres g ON mg.genre_id = g.genre_id
+// CreateUsersTable creates the users table if it doesn't exist
+func CreateUsersTable(db *sql.DB) {
+	_, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS users (
+			user_id INTEGER PRIMARY KEY AUTOINCREMENT,
+			username TEXT NOT NULL UNIQUE COLLATE BINARY,
+			email TEXT NOT NULL UNIQUE COLLATE BINARY,
+			password_hash TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+		);
     `)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Error creating users table: %v", err)
+	}
+	fmt.Println("Users table created successfully.")
+
+	_, err = db.Exec(`
+		CREATE TABLE IF NOT EXISTS movies (
+            movie_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            title TEXT NOT NULL,
+            description TEXT NOT NULL,
+            release_date TEXT,  -- SQLite does not have a specific DATE, using TEXT
+            image_url TEXT
+        );
+    `)
+	if err != nil {
+		log.Fatalf("Error creating movies table: %v", err)
+	}
+	fmt.Println("Movies table created successfully.")
+
+	_, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS genres (
+            genre_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE
+        );
+    `)
+	if err != nil {
+		log.Fatalf("Error creating genres table: %v", err)
+	}
+	fmt.Println("Genres table created successfully.")
+
+	_, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS comments (
+            comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            movie_id INTEGER NOT NULL,
+            content TEXT NOT NULL,
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE
+        );
+    `)
+	if err != nil {
+		log.Fatalf("Error creating comments table: %v", err)
+	}
+	fmt.Println("Comments table created successfully.")
+
+	_, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS movie_genre (
+            movie_id INTEGER NOT NULL,
+            genre_id INTEGER NOT NULL,
+            FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
+            FOREIGN KEY (genre_id) REFERENCES genres(genre_id) ON DELETE CASCADE,
+            PRIMARY KEY (movie_id, genre_id)
+        );
+    `)
+	if err != nil {
+		log.Fatalf("Error creating movie_genre table: %v", err)
+	}
+	fmt.Println("Movie_genre table created successfully.")
+
+	//Indexes
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_users_username %v", err)
+	}
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_users_email ON users(email)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_users_email %v", err)
+	}
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_comments_user_id ON comments(user_id)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_comments_user_id %v", err)
+	}
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_comments_movie_id ON comments(movie_id)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_comments_movie_id %v", err)
+	}
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_genre_movie_id ON movie_genre(movie_id)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_movie_genre_movie_id %v", err)
+	}
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_genre_genre_id ON movie_genre(genre_id)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_movie_genre_genre_id %v", err)
+	}
+
+	fmt.Println("Indexes created successfully")
+
+}
+
+// HashPassword hashes the password
+func HashPassword(password string) (string, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", fmt.Errorf("error hashing password: %w", err)
+	}
+	return string(hashedPassword), nil
+}
+
+// Function to get movies with genres
+func GetMoviesWithGenres(db *sql.DB) ([]MovieWithGenres, error) {
+	rows, err := db.Query(`
+		SELECT m.movie_id, m.title, m.description, m.release_date, m.image_url,
+GROUP_CONCAT(g.name) AS genres
+FROM movies m
+LEFT JOIN movie_genre mg ON m.movie_id = mg.movie_id
+LEFT JOIN genres g ON mg.genre_id = g.genre_id
+GROUP BY m.movie_id
+	`)
+	if err != nil {
+		return nil, fmt.Errorf("error querying movies with genres: %w", err)
 	}
 	defer rows.Close()
 
-	movieMap := make(map[int]models.MovieWithGenres)
-
+	var moviesWithGenres []MovieWithGenres
 	for rows.Next() {
+		var movie Movie
 		var movieID int
-		var movieTitle, movieDescription, movieReleaseDate, movieImageURL string
-		var genreName string
-		err := rows.Scan(&movieID, &movieTitle, &movieDescription, &movieReleaseDate, &movieImageURL, &genreName)
+		var genresString sql.NullString
+		err := rows.Scan(&movieID, &movie.Title, &movie.Description, &movie.ReleaseDate, &movie.ImageURL, &genresString)
 		if err != nil {
-			return nil, err
-		}
-		if _, ok := movieMap[movieID]; !ok {
-			movieMap[movieID] = models.MovieWithGenres{
-				Movie: models.Movie{
-					Title:       movieTitle,
-					Description: movieDescription,
-					ReleaseDate: movieReleaseDate,
-					ImageURL:    movieImageURL,
-				},
-				Genres: []string{},
-			}
-		}
-		if genreName != "" {
-			currentMovie := movieMap[movieID]
-			currentMovie.Genres = append(currentMovie.Genres, genreName)
-			movieMap[movieID] = currentMovie
+			return nil, fmt.Errorf("error scanning movie with genres: %w", err)
 		}
 
+		var genres []string
+		if genresString.Valid {
+			genres = splitString(genresString.String, ",")
+		}
+		moviesWithGenres = append(moviesWithGenres, MovieWithGenres{Movie: movie, Genres: genres})
 	}
-	var moviesWithGenres []models.MovieWithGenres
-	for _, movieWithGenre := range movieMap {
-		moviesWithGenres = append(moviesWithGenres, movieWithGenre)
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating movie with genres rows: %w", err)
 	}
 
 	return moviesWithGenres, nil
 }
 
-// Function to fetch and return genres with their associated movies
-func GetGenresWithMovies(db *sql.DB) ([]models.GenreWithMovies, error) {
+func GetGenresWithMovies(db *sql.DB) ([]GenreWithMovies, error) {
 	rows, err := db.Query(`
-    SELECT g.genre_id, g.name, m.title
+        SELECT 
+            g.genre_id, g.name,
+            GROUP_CONCAT(DISTINCT m.title) AS movies
         FROM genres g
         LEFT JOIN movie_genre mg ON g.genre_id = mg.genre_id
         LEFT JOIN movies m ON mg.movie_id = m.movie_id
+        GROUP BY g.genre_id
     `)
-
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error querying genres with movies: %w", err)
 	}
 	defer rows.Close()
 
-	genreMap := make(map[int]models.GenreWithMovies)
-
+	var genresWithMovies []GenreWithMovies
 	for rows.Next() {
+		var genre Genre
 		var genreID int
-		var genreName string
-		var movieTitle sql.NullString
-		err := rows.Scan(&genreID, &genreName, &movieTitle)
+		var moviesString sql.NullString
+		err := rows.Scan(&genreID, &genre.Name, &moviesString)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("error scanning genre with movies: %w", err)
 		}
-		if _, ok := genreMap[genreID]; !ok {
-			genreMap[genreID] = models.GenreWithMovies{
-				Genre: models.Genre{
-					Name: genreName,
-				},
-				Movies: []string{},
-			}
+
+		var movies []string
+		if moviesString.Valid {
+			movies = splitString(moviesString.String, ",")
 		}
-		if movieTitle.Valid {
-			currentGenre := genreMap[genreID]
-			currentGenre.Movies = append(currentGenre.Movies, movieTitle.String)
-			genreMap[genreID] = currentGenre
-		}
+		genresWithMovies = append(genresWithMovies, GenreWithMovies{Genre: genre, Movies: movies})
 	}
 
-	var genresWithMovies []models.GenreWithMovies
-	for _, genreWithMovie := range genreMap {
-		genresWithMovies = append(genresWithMovies, genreWithMovie)
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error iterating genre with movies rows: %w", err)
 	}
 
 	return genresWithMovies, nil
+}
+
+// Helper function to split comma-separated string into a slice
+func splitString(str string, separator string) []string {
+	var result []string
+	if str != "" {
+		for _, val := range strings.Split(str, separator) {
+			result = append(result, strings.TrimSpace(val))
+		}
+	}
+	return result
 }

@@ -7,15 +7,14 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 
 	"forum-go/database"
 	. "forum-go/models"
 
-
 	_ "github.com/mattn/go-sqlite3"
 )
-
 
 func main() {
 	// Connect to SQLite database
@@ -24,41 +23,26 @@ func main() {
 		log.Fatalf("Failed to connect to database: %v", err)
 	}
 	defer db.Close()
+	
+	//check if the SETUP_DONE variable is set.
+	if os.Getenv("SETUP_DONE") != "true" {
+		// if it is not set setup database.
+		fmt.Print("Doing initial setup...")
+		setupDatabase(db)
+		// set the environment variable so we don't have to setup the database every time.
+		os.Setenv("SETUP_DONE", "true")
+		fmt.Println("Initial setup done")
+	}
+	// Start the server
+    fmt.Print("Starting server...")
+    StartServer(db)
+}
 
+func setupDatabase(db *sql.DB) {
 	// Create tables if not exist
 	database.CreateUsersTable(db)
 
-	// Load users from JSON file
-	users, err := loadUsersFromJSON(filepath.Join("database", "users.json"))
-	if err != nil {
-		log.Fatalf("Error loading users: %v", err)
-	}
-
-	// Insert users into the database
-	for _, user := range users {
-		hashedPassword, err := database.HashPassword(user.PasswordHash)
-
-		if err != nil {
-			log.Printf("Failed to hash password for user %s: %v", user.Username, err)
-			continue
-		}
-
-		// check if user with email exist before creating the user
-		var existingEmail string
-		err = db.QueryRow("SELECT email FROM users WHERE email = ?", user.Email).Scan(&existingEmail)
-		if err == nil {
-			log.Printf("User with email %s already exist. skipping user : %s\n", user.Email, user.Username)
-			continue // email already exist skip to the next user
-		}
-
-		_, err = db.Exec("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", user.Username, user.Email, hashedPassword)
-		if err != nil {
-			log.Printf("Failed to insert user %s: %v", user.Username, err)
-		} else {
-			log.Printf("Inserted user: %s", user.Username)
-		}
-	}
-
+	// Load genres from JSON file
 	genres, err := loadGenresFromJSON(filepath.Join("database", "genres.json"))
 	if err != nil {
 		log.Fatalf("Error loading genres: %v", err)
@@ -98,28 +82,6 @@ func main() {
 		}
 	}
 
-	// Load and insert comments
-	comments, err := loadCommentsFromJSON(filepath.Join("database", "comments.json"))
-	if err != nil {
-		log.Fatalf("Error loading comments: %v", err)
-	}
-	for _, comment := range comments {
-		// Check if the comment already exists based on user_id, movie_id, and content
-		var existingCommentID int
-		err = db.QueryRow("SELECT comment_id FROM comments WHERE user_id = ? AND movie_id = ? AND content = ?", comment.UserID, comment.MovieID, comment.Content).Scan(&existingCommentID)
-		if err == nil {
-			log.Printf("Comment already exist skipping comment for user_id = %d, movie_id = %d\n", comment.UserID, comment.MovieID)
-			continue
-		}
-
-		_, err = db.Exec("INSERT INTO comments (user_id, movie_id, content) VALUES (?, ?, ?)", comment.UserID, comment.MovieID, comment.Content)
-		if err != nil {
-			log.Printf("Failed to insert comment: %v", err)
-		} else {
-			log.Printf("Inserted comment: user_id = %d, movie_id = %d", comment.UserID, comment.MovieID)
-		}
-	}
-
 	// Load and insert movie_genre data
 	movieGenres, err := loadMovieGenreFromJSON(filepath.Join("database", "movie_genre.json"))
 	if err != nil {
@@ -141,36 +103,40 @@ func main() {
 	}
 
 	// Fetch and log movies with genres
-        moviesWithGenres, err := database.GetMoviesWithGenres(db)
-        if err != nil {
-            log.Println("Error getting movies with genres:", err)
-        }
-        fmt.Println("\nMovies with Genres:")
-        for _, mwg := range moviesWithGenres {
-            fmt.Printf("  - Movie: %s, Genres: %v\n", mwg.Movie.Title, mwg.Genres)
-        }
-
-        // Fetch and log genres with movies
-        genresWithMovies, err := database.GetGenresWithMovies(db)
-        if err != nil {
-            log.Println("Error getting genres with movies:", err)
-        }
-        fmt.Println("\nGenres with Movies:")
-        for _, gwm := range genresWithMovies {
-            fmt.Printf("  - Genre: %s, Movies: %v\n", gwm.Genre.Name, gwm.Movies)
-        }
-
-	fmt.Println("User data inserted successfully.")
-	fmt.Print("Start Server...")
-	StartServer()
+	// Fetch and log movies with genres after setup
+moviesWithGenres, err := database.GetMoviesWithGenres(db)
+if err != nil {
+    log.Println("Error getting movies with genres:", err)
+}
+fmt.Println("\nMovies with Genres:")
+for _, mwg := range moviesWithGenres {
+    if len(mwg.Genres) > 0 { // Add this condition
+        fmt.Printf("  - Movie: %s, Genres: %v\n", mwg.Movie.Title, mwg.Genres)
+    }
 }
 
 
+	// Fetch and log genres with movies
+	genresWithMovies, err := database.GetGenresWithMovies(db)
+	if err != nil {
+		log.Println("Error getting genres with movies:", err)
+	}
+	fmt.Println("\nGenres with Movies:")
+	for _, gwm := range genresWithMovies {
+		fmt.Printf("  - Genre: %s, Movies: %v\n", gwm.Genre.Name, gwm.Movies)
+	}
+
+	fmt.Println("Movie data inserted successfully.")
+}
+
 // Function to start a simple HTTP server
-func StartServer() {
+func StartServer(db *sql.DB) {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Welcome to the forum!")
 	})
+
+	http.HandleFunc("/register", registerHandler(db)) // User registration
+	http.HandleFunc("/comment", commentHandler(db))  // Handling new comment
 
 	log.Println("Starting server on :8080...")
 	err := http.ListenAndServe(":8080", nil)
@@ -179,18 +145,111 @@ func StartServer() {
 	}
 }
 
-// Function to load users from JSON file
-func loadUsersFromJSON(filename string) ([]User, error) {
-	var users []User
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
+// Function to handle new user registration
+func registerHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// read the request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read request body", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// unmarshall the json
+		var newUser User
+		err = json.Unmarshal(body, &newUser)
+		if err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+
+		// hash the password
+		hashedPassword, err := database.HashPassword(newUser.PasswordHash)
+		if err != nil {
+			http.Error(w, "Error hashing the password", http.StatusInternalServerError)
+			return
+		}
+
+		// check if user with the email exist
+		var existingEmail string
+		err = db.QueryRow("SELECT email FROM users WHERE email = ?", newUser.Email).Scan(&existingEmail)
+		if err == nil {
+			http.Error(w, "Email already exist", http.StatusConflict)
+			return
+		}
+		// insert the user in the database
+		_, err = db.Exec("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)", newUser.Username, newUser.Email, hashedPassword)
+		if err != nil {
+			log.Printf("Failed to insert user %s: %v", newUser.Username, err)
+			http.Error(w, "Failed to register user", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintln(w, "User Registered Successfully")
+
 	}
-	err = json.Unmarshal(data, &users)
-	if err != nil {
-		return nil, err
+}
+
+// Function to handle new comments
+func commentHandler(db *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, "Method not allowed", http.StatusMethodNotAllowed)
+			return
+		}
+		// Read the request body
+		body, err := ioutil.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, "Failed to read request body", http.StatusBadRequest)
+			return
+		}
+		defer r.Body.Close()
+
+		// Unmarshal the JSON into a Comment struct
+		var newComment Comment
+		err = json.Unmarshal(body, &newComment)
+		if err != nil {
+			http.Error(w, "Invalid JSON format", http.StatusBadRequest)
+			return
+		}
+		// Check if the user exist
+		var existingUserID int
+		err = db.QueryRow("SELECT user_id FROM users WHERE user_id = ?", newComment.UserID).Scan(&existingUserID)
+		if err != nil {
+			http.Error(w, "User does not exist, can't add comment", http.StatusBadRequest)
+			return
+		}
+		// Check if the movie exist
+		var existingMovieID int
+		err = db.QueryRow("SELECT movie_id FROM movies WHERE movie_id = ?", newComment.MovieID).Scan(&existingMovieID)
+		if err != nil {
+			http.Error(w, "Movie does not exist, can't add comment", http.StatusBadRequest)
+			return
+		}
+
+		// Check if the comment already exists
+		var existingCommentID int
+		err = db.QueryRow("SELECT comment_id FROM comments WHERE user_id = ? AND movie_id = ? AND content = ?", newComment.UserID, newComment.MovieID, newComment.Content).Scan(&existingCommentID)
+		if err == nil {
+			http.Error(w, "Comment already exist", http.StatusConflict)
+			return
+		}
+
+		// Insert the comment into the database
+		_, err = db.Exec("INSERT INTO comments (user_id, movie_id, content) VALUES (?, ?, ?)", newComment.UserID, newComment.MovieID, newComment.Content)
+		if err != nil {
+			log.Printf("Failed to insert comment: %v", err)
+			http.Error(w, "Failed to add comment", http.StatusInternalServerError)
+			return
+		}
+		w.WriteHeader(http.StatusCreated)
+		fmt.Fprintln(w, "Comment added successfully!")
 	}
-	return users, nil
 }
 
 // Function to load movies from JSON file
@@ -219,20 +278,6 @@ func loadGenresFromJSON(filename string) ([]Genre, error) {
 		return nil, err
 	}
 	return genres, nil
-}
-
-// Function to load comments from JSON file
-func loadCommentsFromJSON(filename string) ([]Comment, error) {
-	var comments []Comment
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		return nil, err
-	}
-	err = json.Unmarshal(data, &comments)
-	if err != nil {
-		return nil, err
-	}
-	return comments, nil
 }
 
 // Function to load movie_genre data from JSON file
