@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 // User struct matches database schema, JSON tags are removed
 type User struct {
 	Username     string 
@@ -41,4 +43,21 @@ type Comment struct {
 	UserID  int
 	MovieID int
 	Content string
+}
+
+type MoviePost struct {
+	PostID    int
+	UserID    int
+	MovieID   int
+	PostText  string
+	CreatedAt time.Time
+}
+
+// MovieRating struct for database schema
+type MovieRating struct {
+	RatingID  int
+	UserID    int
+	MovieID   int
+	Rating    int
+	CreatedAt time.Time
 }

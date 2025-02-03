@@ -18,6 +18,11 @@ import (
 
 func main() {
 	// Connect to SQLite database
+	cwd, err := os.Getwd()
+    if err != nil {
+        log.Fatalf("Failed to get working directory: %v", err)
+    }
+    fmt.Printf("Current working directory: %s\n", cwd)
 	db, err := sql.Open("sqlite3", "database.db")
 	if err != nil {
 		log.Fatalf("Failed to connect to database: %v", err)
@@ -40,7 +45,7 @@ func main() {
 
 func setupDatabase(db *sql.DB) {
 	// Create tables if not exist
-	database.CreateUsersTable(db)
+	// database.CreateUsersTable(db) This will create the tables twice, removing it.
 
 	// Load genres from JSON file
 	genres, err := loadGenresFromJSON(filepath.Join("database", "genres.json"))
@@ -104,17 +109,16 @@ func setupDatabase(db *sql.DB) {
 
 	// Fetch and log movies with genres
 	// Fetch and log movies with genres after setup
-moviesWithGenres, err := database.GetMoviesWithGenres(db)
-if err != nil {
-    log.Println("Error getting movies with genres:", err)
-}
-fmt.Println("\nMovies with Genres:")
-for _, mwg := range moviesWithGenres {
-    if len(mwg.Genres) > 0 { // Add this condition
-        fmt.Printf("  - Movie: %s, Genres: %v\n", mwg.Movie.Title, mwg.Genres)
-    }
-}
-
+	moviesWithGenres, err := database.GetMoviesWithGenres(db)
+	if err != nil {
+		log.Println("Error getting movies with genres:", err)
+	}
+	fmt.Println("\nMovies with Genres:")
+	for _, mwg := range moviesWithGenres {
+		if len(mwg.Genres) > 0 { // Add this condition
+			fmt.Printf("  - Movie: %s, Genres: %v\n", mwg.Movie.Title, mwg.Genres)
+		}
+	}
 
 	// Fetch and log genres with movies
 	genresWithMovies, err := database.GetGenresWithMovies(db)
@@ -127,6 +131,7 @@ for _, mwg := range moviesWithGenres {
 	}
 
 	fmt.Println("Movie data inserted successfully.")
+	database.CreateUsersTable(db) // Added it here, so tables are created in the proper place.
 }
 
 // Function to start a simple HTTP server

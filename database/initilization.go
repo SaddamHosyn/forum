@@ -13,6 +13,7 @@ import (
 
 // CreateUsersTable creates the users table if it doesn't exist
 func CreateUsersTable(db *sql.DB) {
+    // Existing create table statements for users, movies, genres, comments, movie_genre
 	_, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS users (
 			user_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -82,6 +83,43 @@ func CreateUsersTable(db *sql.DB) {
 	}
 	fmt.Println("Movie_genre table created successfully.")
 
+  // Start of added code
+	_, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS movie_posts (
+            post_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            movie_id INTEGER NOT NULL,
+            post_text TEXT,  -- Optional text content of the post
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE
+        );
+    `)
+    if err != nil {
+        log.Fatalf("Error creating movie_posts table: %v", err)
+    }
+	fmt.Println("Movie_posts table created successfully.")
+
+
+	_, err = db.Exec(`
+        CREATE TABLE IF NOT EXISTS movie_ratings (
+            rating_id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            movie_id INTEGER NOT NULL,
+            rating INTEGER NOT NULL,  -- 1 for like, -1 for dislike, 0 for neutral
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+            FOREIGN KEY (movie_id) REFERENCES movies(movie_id) ON DELETE CASCADE,
+            UNIQUE(user_id, movie_id) -- Ensure a user can only have one rating per movie
+        );
+    `)
+    if err != nil {
+        log.Fatalf("Error creating movie_ratings table: %v", err)
+    }
+	fmt.Println("Movie_ratings table created successfully.")
+
+  // End of added code
+
 	//Indexes
 	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username)")
 	if err != nil {
@@ -107,6 +145,25 @@ func CreateUsersTable(db *sql.DB) {
 	if err != nil {
 		log.Fatalf("Failed to create index idx_movie_genre_genre_id %v", err)
 	}
+
+	// Start of Added indexes
+	_, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_posts_user_id ON movie_posts(user_id)")
+    if err != nil {
+		log.Fatalf("Failed to create index idx_movie_posts_user_id %v", err)
+	}
+    _, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_posts_movie_id ON movie_posts(movie_id)")
+    if err != nil {
+		log.Fatalf("Failed to create index idx_movie_posts_movie_id %v", err)
+	}
+    _, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_ratings_user_id ON movie_ratings(user_id)")
+    if err != nil {
+		log.Fatalf("Failed to create index idx_movie_ratings_user_id %v", err)
+	}
+    _, err = db.Exec("CREATE INDEX IF NOT EXISTS idx_movie_ratings_movie_id ON movie_ratings(movie_id)")
+	if err != nil {
+		log.Fatalf("Failed to create index idx_movie_ratings_movie_id %v", err)
+	}
+    // End of added indexes
 
 	fmt.Println("Indexes created successfully")
 
