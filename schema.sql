@@ -7,6 +7,7 @@ CREATE TABLE users (
     email TEXT NOT NULL UNIQUE COLLATE BINARY,
     password_hash TEXT NOT NULL,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    session_id TEXT UNIQUE
 );
 
 -- Movies Table (unchanged)

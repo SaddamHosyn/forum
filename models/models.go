@@ -4,14 +4,16 @@ import "time"
 
 // User struct matches database schema, JSON tags are removed
 type User struct {
-	Username     string 
+    UserID       int
+	Username     string
 	Email        string
 	PasswordHash string
+    SessionID    string
 }
 
 // Movie struct for database schema, JSON tags are removed
 type Movie struct {
-	Title       string 
+	Title       string
 	Description string
 	ReleaseDate string
 	ImageURL    string
@@ -22,8 +24,8 @@ type Genre struct {
 
 // MovieGenre struct for database schema, JSON tags are removed
 type MovieGenre struct {
-	MovieID int 
-	GenreID int 
+	MovieID int
+	GenreID int
 }
 
 // MovieWithGenres struct for showing the movies with their genres

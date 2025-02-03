@@ -6,7 +6,7 @@ import (
 	"log"
 	"strings"
 
-	. "forum-go/models"
+	"forum-go/models"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -20,7 +20,8 @@ func CreateUsersTable(db *sql.DB) {
 			username TEXT NOT NULL UNIQUE COLLATE BINARY,
 			email TEXT NOT NULL UNIQUE COLLATE BINARY,
 			password_hash TEXT NOT NULL,
-            created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+			session_id TEXT UNIQUE
 		);
     `)
 	if err != nil {
@@ -178,8 +179,14 @@ func HashPassword(password string) (string, error) {
 	return string(hashedPassword), nil
 }
 
+//ComparePassword compares the hash with the password
+func ComparePassword(hashedPassword, password string) error {
+	err := bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+	return err
+}
+
 // Function to get movies with genres
-func GetMoviesWithGenres(db *sql.DB) ([]MovieWithGenres, error) {
+func GetMoviesWithGenres(db *sql.DB) ([]models.MovieWithGenres, error) {
 	rows, err := db.Query(`
 		SELECT m.movie_id, m.title, m.description, m.release_date, m.image_url,
 GROUP_CONCAT(g.name) AS genres
@@ -193,9 +200,9 @@ GROUP BY m.movie_id
 	}
 	defer rows.Close()
 
-	var moviesWithGenres []MovieWithGenres
+	var moviesWithGenres []models.MovieWithGenres
 	for rows.Next() {
-		var movie Movie
+		var movie models.Movie
 		var movieID int
 		var genresString sql.NullString
 		err := rows.Scan(&movieID, &movie.Title, &movie.Description, &movie.ReleaseDate, &movie.ImageURL, &genresString)
@@ -207,7 +214,7 @@ GROUP BY m.movie_id
 		if genresString.Valid {
 			genres = splitString(genresString.String, ",")
 		}
-		moviesWithGenres = append(moviesWithGenres, MovieWithGenres{Movie: movie, Genres: genres})
+		moviesWithGenres = append(moviesWithGenres, models.MovieWithGenres{Movie: movie, Genres: genres})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -217,7 +224,7 @@ GROUP BY m.movie_id
 	return moviesWithGenres, nil
 }
 
-func GetGenresWithMovies(db *sql.DB) ([]GenreWithMovies, error) {
+func GetGenresWithMovies(db *sql.DB) ([]models.GenreWithMovies, error) {
 	rows, err := db.Query(`
         SELECT 
             g.genre_id, g.name,
@@ -232,9 +239,9 @@ func GetGenresWithMovies(db *sql.DB) ([]GenreWithMovies, error) {
 	}
 	defer rows.Close()
 
-	var genresWithMovies []GenreWithMovies
+	var genresWithMovies []models.GenreWithMovies
 	for rows.Next() {
-		var genre Genre
+		var genre models.Genre
 		var genreID int
 		var moviesString sql.NullString
 		err := rows.Scan(&genreID, &genre.Name, &moviesString)
@@ -246,7 +253,7 @@ func GetGenresWithMovies(db *sql.DB) ([]GenreWithMovies, error) {
 		if moviesString.Valid {
 			movies = splitString(moviesString.String, ",")
 		}
-		genresWithMovies = append(genresWithMovies, GenreWithMovies{Genre: genre, Movies: movies})
+		genresWithMovies = append(genresWithMovies, models.GenreWithMovies{Genre: genre, Movies: movies})
 	}
 
 	if err := rows.Err(); err != nil {
@@ -265,4 +272,17 @@ func splitString(str string, separator string) []string {
 		}
 	}
 	return result
+}
+
+func ValidateSessionID(sessionID string, userID *int) error {
+    db, err := sql.Open("sqlite3", "database.db")
+    if err != nil {
+        return fmt.Errorf("failed to open database: %w", err)
+    }
+    defer db.Close()
+	err = db.QueryRow("SELECT user_id FROM users WHERE session_id = ?", sessionID).Scan(userID)
+	if err != nil {
+		return fmt.Errorf("invalid session: %w", err)
+	}
+    return nil
 }
