@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create New Post - Reel Movie Talk Forum</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="/assets/css/templates.css">
+    <link rel="stylesheet" href="/assets/css/newPost.css">
+    
+    <script src="/assets/js/newPost.js" defer></script>
+</head>
+<body>
+    {{template "header" .}}
+    <div class="container">
+        <div class="new-post">
+            <h2>Create New Post</h2>
+            <form id="new-post-form" action="/newpost" method="POST">
+                <div class="form-group">
+                    <label for="title">Title</label>
+                    <input type="text" id="title" name="title" required minlength="5" maxlength="50"aria-label="Post title">
+                </div>
+                
+                <div class="form-group">
+                    <label>Categories (Select up to 3)</label>
+                    <div id="category-selection" class="category-options">
+                        {{range $index, $category := .Categories}}
+                        
+                            <label><input type="checkbox" name="category" value="
+                                {{$category.Emoji}} {{$category.Name}}"> {{$category.Emoji}} {{$category.Name}}</label>
+                               
+                        {{end}}
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="content">Content</label>
+                    <textarea id="content" name="content" required minlength="10"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <button type="submit">Create Post</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    {{template "footer" .}}
+</body>
+</html>

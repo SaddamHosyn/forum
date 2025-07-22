@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.Title}}</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link rel="stylesheet" href="/assets/css/templates.css">
+    <link rel="stylesheet" href="/assets/css/viewPost.css">
+    <link rel="stylesheet" href="/assets/css/modal.css">
+
+    <script src="/assets/js/modal.js"></script>
+    <script src="/assets/js/auth.js" defer></script>
+    <script src="/assets/js/parallax.js"></script>
+    <script src="/assets/js/vote.js"></script>
+    <script src="/assets/js/comments.js"></script>
+</head>
+<body>
+    {{template "header" .}}
+    <div class="container">
+        <div id="post-container">
+            <!-- Post Content -->
+            <h1 id="post-title">{{.Title}}</h1>
+            <p id="post-content">{{.Content}}</p>
+            <p id="post-author">Posted by: {{.Author}}</p>
+            <p id="post-date">Posted on: {{.CreatedAt.Format "Jan 2, 2006 15:04:05"}}</p>
+            <p id="post-categories">Categories: {{.Categories}}</p>
+            
+            <div class="post-actions">
+                <button class="like-button" data-post-id="{{.ID}}">
+                    <span class="material-icons">thumb_up</span> <span class="count">{{.Upvotes}}</span>
+                </button>
+                <button class="dislike-button" data-post-id="{{.ID}}">
+                    <span class="material-icons">thumb_down</span> <span class="count">{{.Downvotes}}</span>
+                </button>
+            </div>
+        </div>
+
+<!-- Comments Section -->
+<div id="comments-list">
+    {{range .Comments}}
+    <div class="comment">
+        <strong>{{.Author}}</strong> <br>
+        <small>({{.TimeAgo}})</small> <br><br>
+        <p>{{.Content}}</p><br>
+        <div class="post-actions">
+            <button class="comment-like-button" data-comment-id="{{.ID}}">
+                <span class="material-icons">thumb_up</span> <span class="count">{{.Upvotes}}</span>
+            </button>
+            <button class="comment-dislike-button" data-comment-id="{{.ID}}">
+                <span class="material-icons">thumb_down</span> <span class="count">{{.Downvotes}}</span>
+            </button>
+        </div>
+    </div>
+    {{else}}
+    <p>No comments yet.</p>
+    {{end}}
+</div>
+        <!-- Comment Form -->
+        {{if .IsLoggedIn}}
+        <form id="comment-form" form action="/submitComment" method="POST">
+            <input type="hidden" name="post_id" value="{{.ID}}">
+            <textarea name="content" id="comment-content" placeholder="Add your comment..."></textarea>
+            <button type="submit">Submit Comment</button>
+        </form>
+        {{else}}
+        <div class="comment-warning">
+            <p>Please <a href="#" class="switch-to-login">Login</a> to leave a comment.</p>
+        </div>
+        {{end}}
+    </div>
+    {{template "footer" .}}
+
+    {{if not .IsLoggedIn}}
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="login-modal">&times;</span>
+            <h2>Login</h2>
+            <div id="login-error" class="error-message" style="display: none;"></div>
+            <form id="login-form" method="post">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                
+                <button type="submit">Login</button>
+            </form>
+            <p>Don't have an account? <br><a href="#" class="switch-to-register">Register here</a></p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="register-modal">&times;</span>
+            <h2>Register</h2>
+            <div id="register-error" class="error-message" style="display: none;"></div>
+            <form id="register-form">
+                <label for="register-email">Email:</label>
+                <input type="email" id="register-email" name="email" required>
+                
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                
+                <label for="register-password">Password:</label>
+                <input type="password" id="register-password" name="password" required>
+                
+                <button type="submit">Register</button>
+            </form>
+            <p>Already have an account? <br><a href="#" class="switch-to-login">Login here</a></p>
+        </div>
+    </div>
+    {{end}}
+</body>
+</html>

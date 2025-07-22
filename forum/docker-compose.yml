@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  reel-movie-talk-app:
+    build: .
+    image: reel-movie-talk-image # <-- IMPORTANT: Replace with your image name
+    ports:
+      - "8999:8999"
+    volumes:
+      - reel-movie-talk-data:/app/reel-movie-talk.db # Mount the volume
+
+    restart: unless-stopped # Auto-restart on failure
+volumes:
+  reel-movie-talk-data: # Define the named volume
+

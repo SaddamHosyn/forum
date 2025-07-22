@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Reel Movie Talk Forum</title>
+
+        <link rel="icon" href="assets/images/favicon.ico">
+
+        <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+        <link rel="stylesheet" href="/assets/css/templates.css">
+        <link rel="stylesheet" href="/assets/css/styles.css">
+        <link rel="stylesheet" href="/assets/css/modal.css">
+
+        <script src="/assets/js/modal.js" defer></script>
+        <script src="/assets/js/auth.js" defer></script>
+        <script src="/assets/js/parallax.js" defer></script>
+        <script src="/assets/js/vote.js"></script>
+        <script src="/assets/js/filter.js"></script>
+    </head>
+    <body>
+        {{template "header" .}}
+
+<!-- Category List -->
+        <div class="category-bar">
+            <h3>Categories</h3>
+            <ul>
+                <!-- "All Movies" Button -->
+                <li>
+                    <a href="/" class="all-movies">
+                        <span>🎬</span> All Genres
+                    </a>
+                </li>
+                {{range .Categories}}
+                <li>
+                    <a href="/?category={{.Name}}">
+                        <span>{{.Emoji}}</span> {{.Name}}
+                    </a>
+                </li>
+                {{end}}
+            </ul>
+        </div>
+
+        <div class="container">
+            <div class="title">
+                <h1>Welcome to the Reel Movie Talk Forum</h1>
+                {{if .IsLoggedIn}}
+                    <p>Welcome back, {{.User.Username}}! Feel free to join the conversation about your favorite movies and shows!</p>
+                    {{else}}
+                    <p>
+                        <a href="#" class="switch-to-login">Login </a> 
+                        or 
+                        <a href="#" class="switch-to-register">Register</a> 
+                        to join the conversation about your favorite movies and shows!
+                    </p>
+                {{end}}
+            </div>
+            <section id="post-list">
+                {{if .Success}}
+                <div class="success-message">Your post has been successfully created!</div>
+                {{end}}
+                <h2>Recent Posts</h2>
+                <div class="posts" id="posts">
+                    {{range .Posts}}
+                    <div class="post-item" data-post-id="{{.ID}}">
+                        <a href="/viewpost?id={{.ID}}">                        
+                            <h3 class="post-title">{{.Title}}</h3>
+                        </a>
+                        <div class="post-meta">
+                            <span class="post-category">{{.Categories}}</span></br></br>
+                            <span class="post-author">Posted by: {{.Author}}</span></br>
+                            <span class="post-date">Posted on: {{.CreatedAt.Format "Jan 2, 2006 15:04:05"}}</span></br></br>
+                        </div>
+                        <p class="post-text">{{.Content}}</p>
+                        <div class="post-footer">
+                            <div class="post-actions">
+                                <button class="like-button" data-post-id="{{.ID}}">
+                                    <span class="material-icons">thumb_up</span> <span class="count">{{.Upvotes}}</span>
+                                </button>
+                                <button class="dislike-button" data-post-id="{{.ID}}">
+                                    <span class="material-icons">thumb_down</span> <span class="count">{{.Downvotes}}</span>
+                                </button>
+                                <a href="/viewpost?id={{.ID}}" class="read-button">Read More</a>
+                            </div>
+                        </div>
+                    </div>
+                    {{else}}
+                    <p class="no-posts">No posts available yet. Be the first to create one!</p>
+                    {{end}}
+                </div>
+            </section>
+        </div>
+        {{template "footer" .}} 
+
+    <!-- Login Modal -->
+    <div id="login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="login-modal">&times;</span>
+            <h2>Login</h2>
+            <div id="login-error" class="error-message" style="display: none;"></div>
+            <form method="post" id="login-form">
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+                
+                <button type="submit">Login</button>
+            </form>
+            <p>Don't have an account? <br><a href="#" class="switch-to-register">Register here</a></p>
+        </div>
+    </div>
+
+    <!-- Register Modal -->
+    <div id="register-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" data-modal="register-modal">&times;</span>
+            <h2>Register</h2>
+            <div id="register-error" class="error-message" style="display: none;"></div>
+            <form method="post" id="register-form">
+                <label for="register-email">Email:</label>
+                <input type="email" id="register-email" name="email" required>
+                
+                <label for="username">Username:</label>
+                <input type="text" id="username" name="username" required>
+                
+                <label for="register-password">Password:</label>
+                <input type="password" id="register-password" name="password" required>
+                
+                <button type="submit">Register</button>
+            </form>
+            <p>Already have an account? <br><a href="#" class="switch-to-login">Login here</a></p>
+        </div>
+    </div>
+    </body>
+</html> 

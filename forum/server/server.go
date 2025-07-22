@@ -1,0 +1,45 @@
+package server
+
+import (
+	"database/sql"
+	"fmt"
+	"forum-go/handler"
+	"forum-go/middleware"
+	"forum-go/template"
+	"log"
+	"net/http"
+)
+
+func Startserver(db *sql.DB) {
+
+	template.InitTemplates()
+	RegisterServer(db)
+
+}
+
+func RegisterServer(db *sql.DB) {
+
+	fs := http.FileServer(http.Dir("assets"))
+	http.Handle("/assets/", http.StripPrefix("/assets/", fs))
+
+	http.HandleFunc("/", handler.IndexHandler)
+	http.HandleFunc("/favicon.ico", handler.FaviconHandler)
+	http.HandleFunc("/viewpost", handler.ViewPostHandler)
+	http.HandleFunc("/newpost", handler.NewPostHandler)
+
+	http.HandleFunc("/login", handler.LoginHandler)
+	http.HandleFunc("/register", handler.RegisterHandler)
+	http.HandleFunc("/profile", handler.ProfileHandler)
+
+	http.HandleFunc("/submit-post", middleware.SessionMiddleware(handler.SubmitPostHandler))
+	http.HandleFunc("/submitComment", middleware.SessionMiddleware(handler.SubmitCommentHandler))
+
+	http.HandleFunc("/vote", handler.VoteHandler)
+	http.HandleFunc("/vote-comment", handler.VoteCommentHandler)
+
+	http.HandleFunc("/logout", handler.LogoutHandler)
+
+	fmt.Println("Server running on :8999")
+	//log.Fatal(http.ListenAndServe(":8999", nil))
+	log.Fatal(http.ListenAndServe(":8999", middleware.EnableCORS(http.DefaultServeMux)))
+}
