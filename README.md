@@ -66,6 +66,7 @@ forum/
 ├── render/               # Template parsing engine (render.go)
 ├── server/               # Router registration & HTTP server setup
 ├── templates/            # HTML view templates
+├── tests/                # Consolidated unit test suite (auth, validation, handlers)
 ├── Dockerfile            # Multi-stage Docker build config
 ├── docker-compose.yml    # Container orchestration setup
 └── .dockerignore         # Docker context exclusion rules
