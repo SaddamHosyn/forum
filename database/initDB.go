@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
+	"os"
 )
 
 var DB *sql.DB
@@ -12,11 +13,17 @@ func InitDB() error {
 
 	var err error
 
-	DB, err = sql.Open("sqlite3", "reeltalk.db")
-	if err != nil {
-		return fmt.Errorf("error opening database: %v", err)
+	if DB == nil {
+		dbPath := os.Getenv("DB_PATH")
+		if dbPath == "" {
+			dbPath = "reeltalk.db"
+		}
+		DB, err = sql.Open("sqlite3", dbPath)
+		if err != nil {
+			return fmt.Errorf("error opening database: %v", err)
+		}
+		log.Println("Database connection opened successfully")
 	}
-	log.Println("Database connection opened successfully")
 
 	// Test the connection
 	if err = DB.Ping(); err != nil {

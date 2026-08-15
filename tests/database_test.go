@@ -10,6 +10,7 @@ import (
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
+	database.DB = nil
 	db, err := sql.Open("sqlite3", ":memory:")
 	if err != nil {
 		t.Fatalf("Failed to open in-memory sqlite database: %v", err)
@@ -17,10 +18,8 @@ func setupTestDB(t *testing.T) *sql.DB {
 
 	database.DB = db
 
-	// Initialize tables
 	if err := database.InitDB(); err != nil {
-		// If InitDB reopens file, we ensure tables exist manually on memory DB
-		_, _ = db.Exec("PRAGMA foreign_keys = ON")
+		t.Fatalf("InitDB failed on memory DB: %v", err)
 	}
 
 	return db
