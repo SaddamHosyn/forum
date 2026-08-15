@@ -8,6 +8,7 @@ import (
 	"forum-go/template"
 	"log"
 	"net/http"
+	"os"
 )
 
 func Startserver(db *sql.DB) {
@@ -39,7 +40,11 @@ func RegisterServer(db *sql.DB) {
 
 	http.HandleFunc("/logout", handler.LogoutHandler)
 
-	fmt.Println("Server running on :8999")
-	//log.Fatal(http.ListenAndServe(":8999", nil))
-	log.Fatal(http.ListenAndServe(":8999", middleware.EnableCORS(http.DefaultServeMux)))
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8999"
+	}
+
+	fmt.Printf("Server running on :%s\n", port)
+	log.Fatal(http.ListenAndServe(":"+port, middleware.EnableCORS(http.DefaultServeMux)))
 }
