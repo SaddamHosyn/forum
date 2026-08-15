@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"forum-go/handler"
 	"forum-go/middleware"
-	"forum-go/template"
+	"forum-go/render"
 	"log"
 	"net/http"
 	"os"
@@ -13,7 +13,7 @@ import (
 
 func Startserver(db *sql.DB) {
 
-	template.InitTemplates()
+	render.InitTemplates()
 	RegisterServer(db)
 
 }

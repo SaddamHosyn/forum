@@ -1,0 +1,27 @@
+# Version control
+.git
+.gitignore
+
+# Docker metadata
+Dockerfile
+docker-compose.yml
+.dockerignore
+.devcontainer
+
+# Compiled binaries and local DB files
+*.db
+*.sqlite
+*.sqlite3
+reeltalk.db
+reel-movie-talk
+forum
+
+# IDE and OS files
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+*.log
+
+# Documentation
+README.md

@@ -9,7 +9,7 @@ import (
 func ErrorHandler(w http.ResponseWriter, r *http.Request, status int) {
 	w.WriteHeader(status)
 
-	t, err := template.ParseFiles("./assets/html/error.html")
+	t, err := template.ParseFiles("./templates/error.html")
 	if err != nil {
 		log.Printf("Failed to parse error.html template: %v", err)
 		ErrorHandler(w, r, http.StatusInternalServerError)

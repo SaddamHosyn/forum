@@ -53,9 +53,9 @@ func NewPostHandler(w http.ResponseWriter, r *http.Request) {
 
 		// Display the new post form
 		tmpl, err := template.ParseFiles(
-			"./assets/html/newPost.html",
-			"./assets/html/header.html",
-			"./assets/html/footer.html")
+			"./templates/newPost.html",
+			"./templates/header.html",
+			"./templates/footer.html")
 		if err != nil {
 			log.Printf("Error parsing template: %v", err)
 			http.Error(w, "Internal server error", http.StatusInternalServerError)

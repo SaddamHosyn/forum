@@ -27,8 +27,9 @@ RUN apk add --no-cache sqlite-libs
 # Copy the compiled binary from the builder stage
 COPY --from=builder /app/reel-movie-talk .
 
-# Copy static assets
+# Copy static assets and templates
 COPY --from=builder /app/assets ./assets
+COPY --from=builder /app/templates ./templates
 
 # Expose the port your application listens on
 EXPOSE 8999

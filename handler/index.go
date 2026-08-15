@@ -3,7 +3,7 @@ package handler
 import (
 	"forum-go/database"
 	"forum-go/model"
-	"forum-go/template"
+	"forum-go/render"
 	"log"
 	"net/http"
 )
@@ -65,7 +65,7 @@ func IndexHandler(w http.ResponseWriter, r *http.Request) {
 		IsLoggedIn: isLoggedIn,
 	}
 
-	err = template.Templates.ExecuteTemplate(w, "index.html", data)
+	err = render.Templates.ExecuteTemplate(w, "index.html", data)
 	if err != nil {
 		log.Printf("Template execution error: %v", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

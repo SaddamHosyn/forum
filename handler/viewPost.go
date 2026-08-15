@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"forum-go/database"
 	"forum-go/model"
-	"forum-go/template"
+	"forum-go/render"
 	"time"
 
 	"log"
@@ -79,7 +79,7 @@ func ViewPostHandler(w http.ResponseWriter, r *http.Request) {
 		Comments:   comments,
 	}
 
-	err = template.Templates.ExecuteTemplate(w, "viewPost.html", data)
+	err = render.Templates.ExecuteTemplate(w, "viewPost.html", data)
 	if err != nil {
 		log.Printf("Error executing template: %v", err)
 		ErrorHandler(w, r, http.StatusInternalServerError)

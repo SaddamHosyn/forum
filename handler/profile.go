@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"forum-go/database"
 	"forum-go/model"
-	"forum-go/template"
+	"forum-go/render"
 	"log"
 	"net/http"
 )
@@ -63,7 +63,7 @@ func ProfileHandler(w http.ResponseWriter, r *http.Request) {
 		IsLoggedIn:    true,
 	}
 
-	err = template.Templates.ExecuteTemplate(w, "profile.html", data)
+	err = render.Templates.ExecuteTemplate(w, "profile.html", data)
 	if err != nil {
 		log.Printf("Error executing template: %v", err)
 		ErrorHandler(w, r, http.StatusInternalServerError)
