@@ -53,11 +53,24 @@ while also addressing important considerations such as security and scalability.
 
 ## Project Structure
 
-```bash
-
-
-
+```text
+forum/
+├── main.go               # Entry point (initializes DB & starts server)
+├── assets/               # Static assets (CSS, JS, Images)
+├── auth/                 # Password hashing & user auth helpers
+├── database/             # SQLite connection, schema & query functions
+├── handler/              # HTTP endpoint route handlers
+├── middleware/           # Session management & CORS middlewares
+├── model/                # Data structures (User, Post, Comment, Category)
+├── pkg/utils/            # Input validation & utility functions
+├── render/               # Template parsing engine (render.go)
+├── server/               # Router registration & HTTP server setup
+├── templates/            # HTML view templates
+├── Dockerfile            # Multi-stage Docker build config
+├── docker-compose.yml    # Container orchestration setup
+└── .dockerignore         # Docker context exclusion rules
 ```
+
 [Back To The Top](#forum-go-project) 
 
 
@@ -121,7 +134,7 @@ By completing this project, you'll gain practical experience in full-stack web d
 
 
 ## Last Updated
-Last updated on 11/2/2025<br>
+Last updated on August 15, 2026<br>
 
 [Back To The Top](#forum-go-project) 
 
