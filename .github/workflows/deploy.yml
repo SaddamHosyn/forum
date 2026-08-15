@@ -15,6 +15,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
 
+    - name: Set lower case repository name
+      run: |
+        echo "REPO_LOWER=${GITHUB_REPOSITORY,,}" >> $GITHUB_ENV
+
     - name: Log in to GitHub Container Registry (GHCR)
       uses: docker/login-action@v3
       with:
@@ -26,7 +30,7 @@ jobs:
       id: meta
       uses: docker/metadata-action@v5
       with:
-        images: ghcr.io/${{ github.repository }}
+        images: ghcr.io/${{ env.REPO_LOWER }}
 
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
@@ -34,6 +38,6 @@ jobs:
         context: .
         push: true
         tags: |
-          ghcr.io/${{ github.repository }}:latest
-          ghcr.io/${{ github.repository }}:${{ github.sha }}
+          ghcr.io/${{ env.REPO_LOWER }}:latest
+          ghcr.io/${{ env.REPO_LOWER }}:${{ github.sha }}
         labels: ${{ steps.meta.outputs.labels }}
