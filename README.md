@@ -12,11 +12,11 @@ Registered users can also interact with content by liking and disliking posts, a
 - [Features](#Features)
 - [Project Structure](#project-structure)
 - [Installation](#installation)
+- [Running Tests](#running-tests)
 - [Requirements](#requirements)
 - [Learning Objectives](#learning-objectives)
 - [Last Updated](#last-updated) 
 - [Authors](#authors) <br><br>
-
 
 [Back To The Top](#forum-go-project) 
 
@@ -46,6 +46,7 @@ while also addressing important considerations such as security and scalability.
 - Development of a responsive and intuitive user interface
 - Integration of content filtering and categorization features
 - Application of security best practices, including password encryption
+- Comprehensive automated test coverage for backend, database, and HTTP flows
 
 <br>
 
@@ -82,6 +83,26 @@ forum/
 3. Navigate to the project directory in your terminal.
 4. Run `go run main.go` to start the web server.
 5. Open your web browser and go to `http://localhost:8999` to access the application.<br><br>
+
+[Back To The Top](#forum-go-project) 
+
+
+## Running Tests
+
+To run the automated test suite locally:
+
+```bash
+go test -v ./...
+```
+
+The test suite covers:
+- **Authentication**: Bcrypt password hashing (`tests/auth_test.go`).
+- **Input Validation**: Password complexity & username validation (`tests/validation_test.go`).
+- **HTTP Handlers**: Favicon & Error route status codes (`tests/handler_test.go`).
+- **In-Memory Database**: SQLite schema creation & query routines (`tests/database_test.go`).
+- **Auth Flows**: Registration & login HTTP POST requests (`tests/auth_flow_test.go`).
+
+<br>
 
 [Back To The Top](#forum-go-project) 
 
