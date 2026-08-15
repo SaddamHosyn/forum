@@ -1,6 +1,7 @@
-package auth
+package tests
 
 import (
+	"forum-go/auth"
 	"testing"
 
 	"golang.org/x/crypto/bcrypt"
@@ -9,7 +10,7 @@ import (
 func TestHashPassword(t *testing.T) {
 	password := "SecretPassword123!"
 
-	hashed, err := HashPassword(password)
+	hashed, err := auth.HashPassword(password)
 	if err != nil {
 		t.Fatalf("HashPassword failed: %v", err)
 	}
@@ -22,7 +23,6 @@ func TestHashPassword(t *testing.T) {
 		t.Fatal("Hashed password should not match plain text password")
 	}
 
-	// Verify that bcrypt can compare plain text and hash
 	err = bcrypt.CompareHashAndPassword([]byte(hashed), []byte(password))
 	if err != nil {
 		t.Errorf("bcrypt comparison failed for valid password: %v", err)
